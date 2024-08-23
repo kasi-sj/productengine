@@ -19,10 +19,18 @@ export function MenubarComponent() {
   return (
     <Menubar>
       <MenubarMenu>
-        <Link href={"/search"}>search</Link>
+        <MenubarTrigger className="gap-2">
+          <Link href={"/search"}>
+            <div className="text-md">search</div>
+          </Link>
+        </MenubarTrigger>
       </MenubarMenu>
       <MenubarMenu>
-        <Link href={"/advancedSearch"}>advanced search</Link>
+        <MenubarTrigger className="gap-2">
+          <Link href={"/advancedSearch"}>
+            <div className="text-md">advanced search</div>
+          </Link>
+        </MenubarTrigger>
       </MenubarMenu>
       <MenubarMenu>
         <MenubarTrigger className="gap-2">
