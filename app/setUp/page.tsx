@@ -17,10 +17,6 @@ export default function Home() {
     (state) => state.setConfiguration
   );
 
-  if (Configuration !== undefined && Configuration !== null) {
-    console.log(Configuration);
-    router.push("/search");
-  }
   const handleSubmit = () => {
     const configuration = {
       partitionName,
