@@ -1,113 +1,136 @@
-import Image from "next/image";
+"use client";
+import React, { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getColumn } from "@/action/product";
+import { useConfigurationStore } from "@/utils/store";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { advancedSearch } from "@/action/product";
+import { config } from "process";
 
-export default function Home() {
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 w-full max-w-5xl items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:size-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
+const Page = () => {
+  const Configuration = useConfigurationStore((state) => state.configuration);
+  const [product, setProduct] = useState<any>(null);
+  const [fields, setFields] = useState<string[]>([]);
 
-      <div className="relative z-[-1] flex place-items-center before:absolute before:h-[300px] before:w-full before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 sm:before:w-[480px] sm:after:w-[240px] before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className="mb-32 grid text-center lg:mb-0 lg:w-full lg:max-w-5xl lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-sm opacity-50">
-            Explore starter templates for Next.js.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className="mb-3 text-2xl font-semibold">
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className="m-0 max-w-[30ch] text-balance text-sm opacity-50">
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+  const [formData, setFormData] = useState(
+    fields.reduce((acc: any, field: any) => ({ ...acc, [field]: null }), {})
   );
-}
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    const fetchFields = async () => {
+      const columns = await getColumn(Configuration);
+      setFields(columns.map((column: any) => column.Label));
+    };
+    fetchFields();
+  }, [Configuration]);
+
+  const fieldsPerPage = 8;
+  const shouldSplit = fields.length > fieldsPerPage;
+  const paginatedFields = fields.slice(
+    (currentPage - 1) * fieldsPerPage,
+    currentPage * fieldsPerPage
+  );
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleNext = () => setCurrentPage(currentPage + 1);
+  const handlePrevious = () => setCurrentPage(currentPage - 1);
+
+  const handleSubmit = () => {
+    // const filter = formData.map((key: any, val: any) => {
+    //   val != null ? { key: key, value: val } : null;
+    // });
+    // console.log("filter", filter);
+    // const data = await advancedSearch(Configuration, formData);
+    // setProduct(data);
+    // console.log(data);
+    console.log(FormData);
+  };
+
+  return (
+    <div className="p-6">
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button variant="outline" disabled={fields.length == 0}>
+            Advanced Search
+          </Button>
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[700px] h-[600px]">
+          <DialogHeader>
+            <DialogTitle>Advanced Search</DialogTitle>
+            <DialogDescription>
+              Use the form below to perform an advanced search.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            id="dynamic-form"
+            onSubmit={handleSubmit}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            {paginatedFields.map((field: any, index: any) => (
+              <div
+                key={field}
+                className={index % 3 === 2 ? "col-span-2" : "col-span-1"}
+              >
+                <Label
+                  htmlFor={field.toLowerCase()}
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  {field}
+                </Label>
+                <Input
+                  id={field.toLowerCase()}
+                  name={field}
+                  value={formData[field]}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            ))}
+            <div className="col-span-2 flex justify-between mt-4">
+              {shouldSplit && currentPage > 1 && (
+                <Button type="button" onClick={handlePrevious}>
+                  Previous
+                </Button>
+              )}
+              {shouldSplit &&
+              currentPage < Math.ceil(fields.length / fieldsPerPage) ? (
+                <Button type="button" onClick={handleNext} className="ml-auto">
+                  Next
+                </Button>
+              ) : (
+                <DialogFooter className="flex w-full justify-end">
+                  <DialogClose
+                    type="submit"
+                    form="dynamic-form"
+                    className="bg-green-500 text-white p-2 rounded-md"
+                  >
+                    Perform Search
+                  </DialogClose>
+                </DialogFooter>
+              )}
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <div>Hi - {JSON.stringify(product)}</div>
+    </div>
+  );
+};
+
+export default Page;
