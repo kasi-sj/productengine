@@ -18,10 +18,17 @@ import Link from "next/link";
 export function MenubarComponent() {
   return (
     <Menubar>
+    <MenubarMenu>
+      <MenubarTrigger className="gap-2">
+        <Link href={"/search"}>
+          <div className="text-md">search</div>
+        </Link>
+      </MenubarTrigger>
+    </MenubarMenu>
       <MenubarMenu>
         <MenubarTrigger className="gap-2">
-          <Link href={"/search"}>
-            <div className="text-md">search</div>
+          <Link href={"/setUp"}>
+            <div className="text-md">set up</div>
           </Link>
         </MenubarTrigger>
       </MenubarMenu>
