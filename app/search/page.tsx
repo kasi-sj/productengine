@@ -21,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ChevronDownIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 type Column = {
   key: string;
@@ -36,6 +37,7 @@ export default function Home() {
   const [endPage, setEndPage] = useState(1);
   const [fetching, setFetching] = useState(false);
   const Configuration = useConfigurationStore((state) => state.configuration);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -92,6 +94,10 @@ export default function Home() {
       </>
     );
   }
+
+  // if (Configuration === undefined || Configuration === null) {
+  //   router.push("/setUp");
+  // }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">

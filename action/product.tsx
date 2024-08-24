@@ -1,4 +1,5 @@
 import axios from "axios";
+import { start } from "repl";
 
 export const searchProduct = async (
   configuration: {
@@ -11,10 +12,7 @@ export const searchProduct = async (
   endRow: number,
   search: string
 ) => {
-  console.log(
-    configuration,
-    
-  )
+  console.log(configuration);
   const { partitionName, username, password, baseURL } = configuration;
   var body: any = {
     endRow,
@@ -110,8 +108,9 @@ export const getColumn = async (configuration: {
   }
 };
 
-
 export const advancedSearch = async (
+  startRow: number,
+  endRow: number,
   configuration: {
     partitionName: string;
     username: string;
@@ -127,15 +126,8 @@ export const advancedSearch = async (
       endRow: 10,
       operationType: "fetch",
       textMatchStyle: "exact",
-      data: filter.map((key: any, val: any) => {
-        val != null ? { key: key, value: val } : null;
-      }),
+      data: filter,
     };
-    console.log(
-      filter.map((key: any, val: any) => {
-        val != null ? { key: key, value: val } : null;
-      })
-    );
 
     const resp = await axios.post(
       `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,

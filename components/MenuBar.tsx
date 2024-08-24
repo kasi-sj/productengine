@@ -3,7 +3,7 @@ import Link from "next/link";
 
 export function MenubarComponent() {
   return (
-    <Menubar>
+    <Menubar className="text-black">
       <MenubarMenu>
         <MenubarTrigger className="gap-2">
           <Link href={"/search"}>
