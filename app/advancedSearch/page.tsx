@@ -127,7 +127,7 @@ const Page = () => {
   return (
     <div className="p-6 flex flex-col gap-4">
       <div className="flex gap-4">
-        {/* This is for advanced Search form and dialog */}
+        <Input className="w-[300px]" placeholder="Search" />
         <Dialog>
           <DialogTrigger asChild>
             <Button
