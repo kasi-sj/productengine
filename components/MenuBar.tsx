@@ -3,7 +3,8 @@ import Link from "next/link";
 
 export function MenubarComponent() {
   return (
-    <Menubar className="text-black">
+    <Menubar className="text-black p-4 mt-2 border-none ">
+      {/* <img src="/product.jpeg" alt="logo" className="w-20 h-20" /> */}
       <MenubarMenu>
         <MenubarTrigger className="gap-2">
           <Link href={"/search"}>

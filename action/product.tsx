@@ -14,8 +14,8 @@ export const searchProduct = async (
 ) => {
   const { partitionName, username, password, baseURL } = configuration;
   var body: any = {
-    endRow,
     operationType: "fetch",
+    endRow,
     startRow,
   };
 
@@ -168,7 +168,7 @@ export const getProduct = async (
   var body: any = {
     operationType: "fetch",
     data: {
-      "sku" : sku
+      sku: sku,
     },
   };
 
@@ -190,6 +190,82 @@ export const getProduct = async (
   const data = resp.data.response;
   const result = {
     data: data.data[0],
+  };
+  return result;
+};
+
+export const getSimilarProducts = async (
+  configuration: {
+    partitionName: string;
+    username: string;
+    password: string;
+    baseURL: string;
+  },
+  sku: string
+) => {
+  const { partitionName, username, password, baseURL } = configuration;
+  var body: any = {
+    operationType: "fetch",
+    data: {
+      sku: sku,
+    },
+  };
+  const resp = await axios.post(
+    `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
+    body,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(`${partitionName}/${username}:${password}`).toString(
+            "base64"
+          ),
+      },
+    }
+  );
+
+  const product = resp.data.response.data[0];
+    body = {
+      ...body,
+      endRow: 10,
+      startRow : 0,
+      data: {
+        operator: "or",
+        _constructor: "AdvancedCriteria",
+        criteria: Object.keys(product)
+          .map((f: any) => {
+            return {
+              fieldName: f,
+              operator: "iContains",
+              value: product[f],
+            };
+          })
+          .filter((item) => {
+            return item.value != "" && item.fieldName !== "typedId";
+          }),
+      },
+    };
+  const res = await axios.post(
+    `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
+    body,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(`${partitionName}/${username}:${password}`).toString(
+            "base64"
+          ),
+      },
+    }
+  );
+
+  const data = res.data.response;
+  const totalRows = data.totalRows;
+  const result = {
+    data: data.data.filter((item: any) => item.sku !== sku),
+    totalRows,
   };
   return result;
 };

@@ -55,6 +55,7 @@ const Page = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTablePage, setCurrentTablePage] = useState(1);
   const [searchValue, setSearchValue] = useState<string>("");
+  const [selectedRows, setSelectedRows] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -290,14 +291,44 @@ const Page = () => {
           </DropdownMenu>
         </Dropdown>
 
-        {/* This is for the table */}
+        {selectedRows.length > 0 && (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="bg-blue-500 text-white">Compare</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Compare</DialogTitle>
+              </DialogHeader>
+              <DialogDescription>
+                Compare the selected products.
+              </DialogDescription>
+              <DialogFooter>
+                <Button
+                  className="bg-green-500 text-white"
+                  onClick={() => setSelectedRows([])}
+                >
+                  Clear
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
+      {/* This is for the table */}
       {isLoading || isFetching || isSearchFetching || isSearchLoading ? (
         <div className="flex justify-center items-center">Loading...</div>
       ) : (
         <div className="w-[1000px]">
           {product?.length > 0 && selectedColumns?.length > 0 ? (
-            <Table className="text-black w-full h-[400px]">
+            <Table
+              className="text-black w-full h-[500px]"
+              selectionMode="multiple"
+              color="default"
+              onSelectionChange={(selected: any) =>
+                setSelectedRows((prev) => [...prev, selected])
+              }
+            >
               <TableHeader columns={selectedColumns}>
                 {(column) => (
                   <TableColumn key={column.key}>{column.Label}</TableColumn>
@@ -305,9 +336,13 @@ const Page = () => {
               </TableHeader>
               <TableBody items={product}>
                 {(item: any) => (
-                  <TableRow className=" cursor-pointer" key={item.typedId} onClick={()=>{
-                    router.push(`search/${item["sku"]}`)
-                  }}>
+                  <TableRow
+                    className=" cursor-pointer"
+                    key={item.sku}
+                    onClick={() => {
+                      router.push(`search/${encodeURIComponent(item["sku"])}`);
+                    }}
+                  >
                     {selectedColumns.map((column) => (
                       <TableCell key={column.key}>
                         {item[column.key] ? item[column.key] : "null"}
@@ -327,13 +362,13 @@ const Page = () => {
         </div>
       )}
       {/* This is for the pagination */}
-      {endPage > 0 && (
+      {product?.length > 0 && (
         <Pagination
           initialPage={1}
           page={currentTablePage}
           total={endPage}
           onChange={(page) => setCurrentTablePage(page)}
-          className="mt-5"
+          className="mt-2 "
         />
       )}
     </div>

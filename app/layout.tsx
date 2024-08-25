@@ -16,7 +16,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <QueryClientProvider client={queryClient}>
           <MenubarComponent />
-          {children}
+          <div className="">{children}</div>
         </QueryClientProvider>
       </body>
     </html>
