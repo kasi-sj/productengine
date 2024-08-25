@@ -1,5 +1,5 @@
+'use server'
 import axios from "axios";
-import { start } from "repl";
 
 export const searchProduct = async (
   configuration: {
@@ -12,7 +12,6 @@ export const searchProduct = async (
   endRow: number,
   search: string
 ) => {
-  console.log(configuration);
   const { partitionName, username, password, baseURL } = configuration;
   var body: any = {
     endRow,
@@ -27,8 +26,9 @@ export const searchProduct = async (
       data: {
         operator: "or",
         _constructor: "AdvancedCriteria",
-        criteria: Object.keys(columns)
+        criteria: columns
           .map((f: any) => {
+            
             return {
               fieldName: f.key,
               operator: "iContains",
@@ -36,12 +36,12 @@ export const searchProduct = async (
             };
           })
           .filter((item) => {
-            return item.value != "";
+            return item.value != "" && item.fieldName !== "typedId";
           }),
       },
     };
   }
-
+  console.log(JSON.stringify(body))
   const resp = await axios.post(
     `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
     body,

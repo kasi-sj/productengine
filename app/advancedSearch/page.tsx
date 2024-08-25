@@ -41,7 +41,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const Page = () => {
   const Configuration = useConfigurationStore((state) => state.configuration);
-  const [ready, setReady] = useState(false);
+  const [type , setType] = useState("");
   const [product, setProduct] = useState<any>(null);
   const [fields, setFields] = useState<string[]>([]);
   const [columns, setColumns] = useState<any[]>([]);
@@ -122,27 +122,36 @@ const Page = () => {
         currentTablePage * 10, //endRow
         searchValue
       );
-      console.log("data", data);
       setProduct(data);
       setEndPage(Math.floor(totalRows / 10));
       return data;
     },
+    enabled: false,
   });
 
+  
+  useEffect(() => {
+    if (type === "advancedSearch") {
+      refetch();
+    }else if(type === "search"){
+      searchRefetch();
+    }
+  }, [currentTablePage, type]);
+  
   const handleSubmit = async (e: any) => {
-    setReady(true);
     e.preventDefault();
+    setType("advancedSearch");
+    if(currentTablePage == 1){
+      refetch();
+    }
     setCurrentTablePage(1);
   };
 
-  useEffect(() => {
-    if (ready) refetch();
-  }, [currentTablePage, ready]);
-
   const handleSearch = () => {
-    setSearchValue("");
-    console.log("fetch")
-    searchRefetch();
+    setType("search");
+    if(currentTablePage == 1){
+      searchRefetch();
+    }
     setCurrentTablePage(1);
   };
 
