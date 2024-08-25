@@ -36,7 +36,7 @@ import {
   PaginationItem,
   PaginationCursor,
 } from "@nextui-org/pagination";
-import { advancedSearch } from "@/action/product";
+import { advancedSearch, searchProduct } from "@/action/product";
 import { useQuery } from "@tanstack/react-query";
 
 const Page = () => {
@@ -52,6 +52,7 @@ const Page = () => {
   );
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTablePage, setCurrentTablePage] = useState(1);
+  const [searchValue, setSearchValue] = useState<string>("");
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -84,7 +85,7 @@ const Page = () => {
   const handleNext = () => setCurrentPage(currentPage + 1);
   const handlePrevious = () => setCurrentPage(currentPage - 1);
 
-  const { data, isLoading, isFetched, refetch , isFetching} = useQuery({
+  const { data, isLoading, isFetched, refetch, isFetching } = useQuery({
     queryKey: ["advancedSearch"],
     queryFn: async () => {
       const { data, totalRows } = await advancedSearch(
@@ -107,12 +108,30 @@ const Page = () => {
     enabled: false,
   });
 
+  const {
+    data: Searchdata,
+    isLoading: isSearchLoading,
+    isFetching: isSearchFetching,
+    refetch: searchRefetch,
+  } = useQuery({
+    queryKey: ["search"],
+    queryFn: async () => {
+      const { data, totalRows } = await searchProduct(
+        Configuration,
+        currentTablePage * 10 - 10, //startRow
+        currentTablePage * 10, //endRow
+        searchValue
+      );
+      console.log("data", data);
+      setProduct(data);
+      setEndPage(Math.floor(totalRows / 10));
+      return data;
+    },
+  });
+
   const handleSubmit = async (e: any) => {
     setReady(true);
     e.preventDefault();
-    if(currentTablePage==1){
-      refetch();
-    }
     setCurrentTablePage(1);
   };
 
@@ -120,14 +139,44 @@ const Page = () => {
     if (ready) refetch();
   }, [currentTablePage, ready]);
 
-  if(isLoading||isFetching){
-    return <div>Loading...</div>
-  }
+  const handleSearch = () => {
+    setSearchValue("");
+    console.log("fetch")
+    searchRefetch();
+    setCurrentTablePage(1);
+  };
+
 
   return (
     <div className="p-6 flex flex-col gap-4">
       <div className="flex gap-4">
-        <Input className="w-[300px]" placeholder="Search" />
+        {/* This is for search form */}
+        <div className="flex flex-row">
+          <Input
+            type="text"
+            className="w-96"
+            placeholder="search"
+            onChange={(e) => setSearchValue(e.target.value)}
+            value={searchValue}
+          />
+          <Button className="ml-2 bg-green-500" onClick={handleSearch}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="white"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              />
+            </svg>
+          </Button>
+        </div>
+        {/* This is for advanced Search form and dialog */}
         <Dialog>
           <DialogTrigger asChild>
             <Button
@@ -223,7 +272,7 @@ const Page = () => {
             onSelectionChange={handleSelectionChange}
             className="h-[300px] overflow-y-auto no-scrollbar"
           >
-            {data?.length > 0
+            {product?.length > 0
               ? columns.map((column) => (
                   <DropdownItem key={column.key} value={column.key}>
                     {column.Label}
@@ -235,34 +284,38 @@ const Page = () => {
 
         {/* This is for the table */}
       </div>
-
-      <div className="w-[1000px]">
-        {data?.length > 0 && selectedColumns?.length > 0 ? (
-          <Table className="text-black w-full h-[400px]">
-            <TableHeader columns={selectedColumns}>
-              {(column) => (
-                <TableColumn key={column.key}>{column.Label}</TableColumn>
-              )}
-            </TableHeader>
-            <TableBody items={data}>
-              {(item: any) => (
-                <TableRow key={item.typedId}>
-                  {selectedColumns.map((column) => (
-                    <TableCell key={column.key}>
-                      {item[column.key] ? item[column.key] : "null"}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        ) : (
-          <div className="flex justify-center h-[400px] items-center text-2xl">
-            {isLoading ? "Loading..." : "No data found"}
-          </div>
-        )}
-      </div>
-
+      {isLoading || isFetching ? (
+        <div className="flex justify-center items-center">Loading...</div>
+      ) : (
+        <div className="w-[1000px]">
+          {product?.length > 0 && selectedColumns?.length > 0 ? (
+            <Table className="text-black w-full h-[400px]">
+              <TableHeader columns={selectedColumns}>
+                {(column) => (
+                  <TableColumn key={column.key}>{column.Label}</TableColumn>
+                )}
+              </TableHeader>
+              <TableBody items={product}>
+                {(item: any) => (
+                  <TableRow key={item.typedId}>
+                    {selectedColumns.map((column) => (
+                      <TableCell key={column.key}>
+                        {item[column.key] ? item[column.key] : "null"}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex justify-center h-[400px] items-center text-2xl">
+              {isLoading || isSearchLoading || isSearchFetching
+                ? "Loading..."
+                : "No data found"}
+            </div>
+          )}
+        </div>
+      )}
       {/* This is for the pagination */}
       {endPage > 0 && (
         <Pagination
