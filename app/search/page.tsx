@@ -38,6 +38,7 @@ import {
 } from "@nextui-org/pagination";
 import { advancedSearch, searchProduct } from "@/action/product";
 import { useQuery } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 
 const Page = () => {
   const Configuration = useConfigurationStore((state) => state.configuration);
@@ -50,6 +51,7 @@ const Page = () => {
   const [formData, setFormData] = useState(
     fields.reduce((acc: any, field: any) => ({ ...acc, [field]: null }), {})
   );
+  const router = useRouter();
   const [currentPage, setCurrentPage] = useState(1);
   const [currentTablePage, setCurrentTablePage] = useState(1);
   const [searchValue, setSearchValue] = useState<string>("");
@@ -303,7 +305,9 @@ const Page = () => {
               </TableHeader>
               <TableBody items={product}>
                 {(item: any) => (
-                  <TableRow key={item.typedId}>
+                  <TableRow className=" cursor-pointer" key={item.typedId} onClick={()=>{
+                    router.push(`search/${item["sku"]}`)
+                  }}>
                     {selectedColumns.map((column) => (
                       <TableCell key={column.key}>
                         {item[column.key] ? item[column.key] : "null"}

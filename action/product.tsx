@@ -1,4 +1,4 @@
-'use server'
+"use server";
 import axios from "axios";
 
 export const searchProduct = async (
@@ -28,7 +28,6 @@ export const searchProduct = async (
         _constructor: "AdvancedCriteria",
         criteria: columns
           .map((f: any) => {
-            
             return {
               fieldName: f.key,
               operator: "iContains",
@@ -41,7 +40,7 @@ export const searchProduct = async (
       },
     };
   }
-  console.log(JSON.stringify(body))
+  console.log(JSON.stringify(body));
   const resp = await axios.post(
     `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
     body,
@@ -154,4 +153,43 @@ export const advancedSearch = async (
       totalRows: 0,
     };
   }
+};
+
+export const getProduct = async (
+  configuration: {
+    partitionName: string;
+    username: string;
+    password: string;
+    baseURL: string;
+  },
+  sku: string
+) => {
+  const { partitionName, username, password, baseURL } = configuration;
+  var body: any = {
+    operationType: "fetch",
+    data: {
+      "sku" : sku
+    },
+  };
+
+  const resp = await axios.post(
+    `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
+    body,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(`${partitionName}/${username}:${password}`).toString(
+            "base64"
+          ),
+      },
+    }
+  );
+
+  const data = resp.data.response;
+  const result = {
+    data: data.data[0],
+  };
+  return result;
 };
