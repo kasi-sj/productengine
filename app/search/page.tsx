@@ -1,187 +1,339 @@
 "use client";
-import { getColumn, searchProduct } from "@/action/product";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from "react";
+// import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getColumn } from "@/action/product";
+import { ChevronDownIcon, SearchIcon } from "lucide-react";
 import { useConfigurationStore } from "@/utils/store";
-import { useEffect, useState } from "react";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  Button,
+} from "@nextui-org/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogClose,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableColumn,
+  TableRow,
+  TableCell,
+} from "@nextui-org/table";
 import {
   Pagination,
-  PaginationContent,
-  PaginationEllipsis,
   PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from "@/components/ui/pagination";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ChevronDownIcon } from "lucide-react";
-import { useRouter } from "next/navigation";
+  PaginationCursor,
+} from "@nextui-org/pagination";
+import { advancedSearch, searchProduct } from "@/action/product";
+import { useQuery } from "@tanstack/react-query";
 
-type Column = {
-  key: string;
-  Label: string;
-};
-
-export default function Home() {
-  const [products, setProducts] = useState<any[]>([]);
-  const [columns, setColumns] = useState<Column[]>([]);
-  const [selectedColumns, setSelectedColumns] = useState<Column[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchValue, setSearchValue] = useState<string>("");
-  const [endPage, setEndPage] = useState(1);
-  const [fetching, setFetching] = useState(false);
+const Page = () => {
   const Configuration = useConfigurationStore((state) => state.configuration);
-  const router = useRouter();
+  const [type, setType] = useState("");
+  const [product, setProduct] = useState<any>(null);
+  const [fields, setFields] = useState<string[]>([]);
+  const [columns, setColumns] = useState<any[]>([]);
+  const [selectedColumns, setSelectedColumns] = useState<any[]>([]);
+  const [endPage, setEndPage] = useState(0);
+  const [formData, setFormData] = useState(
+    fields.reduce((acc: any, field: any) => ({ ...acc, [field]: null }), {})
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentTablePage, setCurrentTablePage] = useState(1);
+  const [searchValue, setSearchValue] = useState<string>("");
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      setProducts([]);
+    const fetchFields = async () => {
+      const columns = await getColumn(Configuration);
+      setFields(columns.map((column: any) => column.Label));
+      setColumns(columns);
+      setSelectedColumns(columns);
+    };
+    fetchFields();
+  }, [Configuration]);
+
+  const fieldsPerPage = 8;
+  const shouldSplit = fields.length > fieldsPerPage;
+  const paginatedFields = fields.slice(
+    (currentPage - 1) * fieldsPerPage,
+    currentPage * fieldsPerPage
+  );
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSelectionChange = (keys: any) => {
+    const selected = columns.filter((column) => keys.has(column.key));
+    setSelectedColumns(selected);
+  };
+
+  // {this is for form}
+  const handleNext = () => setCurrentPage(currentPage + 1);
+  const handlePrevious = () => setCurrentPage(currentPage - 1);
+
+  const { data, isLoading, isFetched, refetch, isFetching } = useQuery({
+    queryKey: ["advancedSearch"],
+    queryFn: async () => {
+      const { data, totalRows } = await advancedSearch(
+        currentTablePage * 10 - 10, //startRow
+        currentTablePage * 10, //endRow
+        Configuration,
+        Object.entries(formData).reduce((acc: any, [key, value]) => {
+          if (value !== null) {
+            acc[key] = value;
+          }
+          return acc;
+        }, {})
+      );
+      setProduct(data);
+      setFormData({});
+      setCurrentPage(1);
+      setEndPage(Math.floor(totalRows / 10));
+      return data;
+    },
+    enabled: false,
+  });
+
+  const {
+    data: Searchdata,
+    isLoading: isSearchLoading,
+    isFetching: isSearchFetching,
+    refetch: searchRefetch,
+  } = useQuery({
+    queryKey: ["search"],
+    queryFn: async () => {
       const { data, totalRows } = await searchProduct(
         Configuration,
-        currentPage * 10 - 10,
-        currentPage * 10,
+        currentTablePage * 10 - 10, //startRow
+        currentTablePage * 10, //endRow
         searchValue
       );
-      setProducts(data);
-      setEndPage(Math.ceil(totalRows / 10));
-    };
-
-    const fetchColumns = async () => {
-      console.log("hai");
-      const data = await getColumn(Configuration);
-      setColumns(data);
-      setSelectedColumns(data);
-    };
-    setFetching(true);
-
-    fetchColumns();
-    fetchProducts();
-    setFetching(false);
-  }, [currentPage, Configuration]);
+      setProduct(data);
+      setEndPage(Math.floor(totalRows / 10));
+      return data;
+    },
+  });
 
   useEffect(() => {
-    if (currentPage === 1) {
-      const fetchProducts = async () => {
-        setFetching(true);
-        setProducts([]);
-        const { data, totalRows } = await searchProduct(
-          Configuration,
-          1 * 10 - 10,
-          1 * 10,
-          searchValue
-        );
-        setFetching(false), setProducts(data);
-        setEndPage(Math.ceil(totalRows / 10));
-      };
-      fetchProducts();
-    } else {
-      setCurrentPage(1);
+    if (type === "advancedSearch") {
+      refetch();
+    } else if (type === "search") {
+      searchRefetch();
     }
-  }, [searchValue]);
+  }, [currentTablePage, type]);
 
-  if (Configuration === undefined || Configuration === null) {
-    return (
-      <>
-        <main className="flex min-h-screen flex-col items-center justify-between p-24">
-          <div className="">configuration not found</div>
-        </main>
-      </>
-    );
-  }
+  const handleSubmit = async (e: any) => {
+    e.preventDefault();
+    setType("advancedSearch");
+    if (currentTablePage == 1) {
+      refetch();
+    }
+    setCurrentTablePage(1);
+  };
 
-  // if (Configuration === undefined || Configuration === null) {
-  //   router.push("/setUp");
-  // }
-
+  const handleSearch = () => {
+    setType("search");
+    if (currentTablePage == 1) {
+      searchRefetch();
+    }
+    setCurrentTablePage(1);
+  };
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="flex flex-row">
-        <Input type="text" className="w-96" placeholder="search" />
-        <Button className="ml-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="1.5"
-            stroke="white"
-            className="size-6"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-            />
-          </svg>
-        </Button>
-        <Select>
-          <SelectTrigger>
-            <Button className="w-[100px] bg-white">Visible Columns</Button>
-          </SelectTrigger>
-          <SelectContent className="h-[300px] w-[300px] overflow-y-auto no-scrollbar">
-            {columns.map((column) => (
-              <Button
-                variant={"outline"}
-                className="w-full"
-                key={column.key}
-                onClick={() => {
-                  if (
-                    selectedColumns.map((item) => item.key).includes(column.key)
-                  ) {
-                    setSelectedColumns(
-                      selectedColumns.filter((item) => item.key !== column.key)
-                    );
-                    return;
-                  }
-                  setSelectedColumns([...selectedColumns, column]);
-                }}
-              >
-                {column.Label}
-                <div>
-                  {selectedColumns.map((item) => item.key).includes(column.key)
-                    ? "✓"
-                    : null}
+    <div className="p-6 flex flex-col gap-4 justify-center items-center">
+      <div className="flex gap-4">
+        {/* This is for search form */}
+        <div className="flex flex-row">
+          <Input
+            type="text"
+            className="w-96"
+            placeholder="search"
+            onChange={(e) => setSearchValue(e.target.value)}
+            value={searchValue}
+          />
+          <Button className="ml-2 bg-green-500" onClick={handleSearch}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="white"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              />
+            </svg>
+          </Button>
+        </div>
+        {/* This is for advanced Search form and dialog */}
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button
+              variant="solid"
+              disabled={fields.length == 0}
+              className="bg-blue-600 text-white"
+            >
+              Advanced Search
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[700px] h-[600px]">
+            <DialogHeader>
+              <DialogTitle>Advanced Search</DialogTitle>
+              <DialogDescription>
+                Use the form below to perform an advanced search.
+              </DialogDescription>
+            </DialogHeader>
+            <form
+              id="dynamic-form"
+              onSubmit={handleSubmit}
+              className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+            >
+              {paginatedFields.map((field: any, index: any) => (
+                <div
+                  key={field}
+                  className={index % 3 === 2 ? "col-span-2" : "col-span-1"}
+                >
+                  <Label
+                    htmlFor={field.toLowerCase()}
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
+                    {field}
+                  </Label>
+                  <Input
+                    id={field.toLowerCase()}
+                    name={field}
+                    value={formData[field]}
+                    onChange={handleChange}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
-              </Button>
-            ))}
-          </SelectContent>
-        </Select>
+              ))}
+              <div className="col-span-2 flex justify-between mt-4">
+                {shouldSplit && currentPage > 1 && (
+                  <Button
+                    type="button"
+                    onClick={handlePrevious}
+                    className="bg-green-500 text-white"
+                  >
+                    Previous
+                  </Button>
+                )}
+                {shouldSplit &&
+                currentPage < Math.ceil(fields.length / fieldsPerPage) ? (
+                  <Button
+                    type="button"
+                    onClick={handleNext}
+                    className="ml-auto bg-green-500 text-white"
+                  >
+                    Next
+                  </Button>
+                ) : (
+                  <DialogFooter className="flex w-full justify-end">
+                    <DialogClose
+                      type="submit"
+                      form="dynamic-form"
+                      className="bg-green-500 text-white p-2 rounded-md"
+                    >
+                      Perform Search
+                    </DialogClose>
+                  </DialogFooter>
+                )}
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* This is for the visible columns of the table */}
+        <Dropdown className="text-black">
+          <DropdownTrigger>
+            <Button
+              endContent={<ChevronDownIcon className="text-small" />}
+              variant="flat"
+              className="w-[185px] bg-green-500 text-white"
+            >
+              Visible Columns
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu
+            closeOnSelect={false}
+            selectedKeys={new Set(selectedColumns.map((col) => col.key))}
+            selectionMode="multiple"
+            onSelectionChange={handleSelectionChange}
+            className="h-[300px] overflow-y-auto no-scrollbar"
+          >
+            {product?.length > 0
+              ? columns.map((column) => (
+                  <DropdownItem key={column.key} value={column.key}>
+                    {column.Label}
+                  </DropdownItem>
+                ))
+              : []}
+          </DropdownMenu>
+        </Dropdown>
+
+        {/* This is for the table */}
       </div>
-      {JSON.stringify(products)}
-      <Pagination>
-        <PaginationContent>
-          <PaginationItem>
-            <PaginationPrevious
-              href="#"
-              onClick={() => {
-                setCurrentPage(currentPage - 1);
-              }}
-            />
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#">{currentPage}</PaginationLink>
-          </PaginationItem>
-          {currentPage < endPage && (
-            <PaginationItem>
-              <PaginationEllipsis />
-            </PaginationItem>
+      {isLoading || isFetching || isSearchFetching || isSearchLoading ? (
+        <div className="flex justify-center items-center">Loading...</div>
+      ) : (
+        <div className="w-[1000px]">
+          {product?.length > 0 && selectedColumns?.length > 0 ? (
+            <Table className="text-black w-full h-[400px]">
+              <TableHeader columns={selectedColumns}>
+                {(column) => (
+                  <TableColumn key={column.key}>{column.Label}</TableColumn>
+                )}
+              </TableHeader>
+              <TableBody items={product}>
+                {(item: any) => (
+                  <TableRow key={item.typedId}>
+                    {selectedColumns.map((column) => (
+                      <TableCell key={column.key}>
+                        {item[column.key] ? item[column.key] : "null"}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="flex justify-center h-[400px] items-center text-2xl">
+              {isLoading || isSearchLoading || isSearchFetching
+                ? "Loading..."
+                : "No data found"}
+            </div>
           )}
-          <PaginationItem>
-            <PaginationNext
-              href="#"
-              onClick={() => {
-                setCurrentPage(currentPage + 1);
-              }}
-            />
-          </PaginationItem>
-        </PaginationContent>
-      </Pagination>
-    </main>
+        </div>
+      )}
+      {/* This is for the pagination */}
+      {endPage > 0 && (
+        <Pagination
+          initialPage={1}
+          page={currentTablePage}
+          total={endPage}
+          onChange={(page) => setCurrentTablePage(page)}
+          className="mt-5"
+        />
+      )}
+    </div>
   );
-}
+};
+
+export default Page;
