@@ -38,10 +38,10 @@ import {
 } from "@nextui-org/pagination";
 import { advancedSearch } from "@/action/product";
 import { useQuery } from "@tanstack/react-query";
-import { start } from "repl";
 
 const Page = () => {
   const Configuration = useConfigurationStore((state) => state.configuration);
+  const [ready, setReady] = useState(false);
   const [product, setProduct] = useState<any>(null);
   const [fields, setFields] = useState<string[]>([]);
   const [columns, setColumns] = useState<any[]>([]);
@@ -84,7 +84,7 @@ const Page = () => {
   const handleNext = () => setCurrentPage(currentPage + 1);
   const handlePrevious = () => setCurrentPage(currentPage - 1);
 
-  const { data, isLoading, isFetched, refetch } = useQuery({
+  const { data, isLoading, isFetched, refetch , isFetching} = useQuery({
     queryKey: ["advancedSearch"],
     queryFn: async () => {
       const { data, totalRows } = await advancedSearch(
@@ -101,23 +101,28 @@ const Page = () => {
       setProduct(data);
       setFormData({});
       setCurrentPage(1);
-      setEndPage(totalRows);
+      setEndPage(Math.floor(totalRows / 10));
+      return data;
     },
     enabled: false,
   });
 
   const handleSubmit = async (e: any) => {
+    setReady(true);
     e.preventDefault();
-    setProduct({});
-    setEndPage(0);
-    refetch();
+    if(currentTablePage==1){
+      refetch();
+    }
+    setCurrentTablePage(1);
   };
 
   useEffect(() => {
-    setProduct({});
-    setEndPage(0);
-    refetch();
-  }, [currentTablePage]);
+    if (ready) refetch();
+  }, [currentTablePage, ready]);
+
+  if(isLoading||isFetching){
+    return <div>Loading...</div>
+  }
 
   return (
     <div className="p-6 flex flex-col gap-4">
@@ -218,7 +223,7 @@ const Page = () => {
             onSelectionChange={handleSelectionChange}
             className="h-[300px] overflow-y-auto no-scrollbar"
           >
-            {product?.length > 0
+            {data?.length > 0
               ? columns.map((column) => (
                   <DropdownItem key={column.key} value={column.key}>
                     {column.Label}
@@ -232,14 +237,14 @@ const Page = () => {
       </div>
 
       <div className="w-[1000px]">
-        {product?.length > 0 && selectedColumns?.length > 0 ? (
+        {data?.length > 0 && selectedColumns?.length > 0 ? (
           <Table className="text-black w-full h-[400px]">
             <TableHeader columns={selectedColumns}>
               {(column) => (
                 <TableColumn key={column.key}>{column.Label}</TableColumn>
               )}
             </TableHeader>
-            <TableBody items={product}>
+            <TableBody items={data}>
               {(item: any) => (
                 <TableRow key={item.typedId}>
                   {selectedColumns.map((column) => (
@@ -262,6 +267,7 @@ const Page = () => {
       {endPage > 0 && (
         <Pagination
           initialPage={1}
+          page={currentTablePage}
           total={endPage}
           onChange={(page) => setCurrentTablePage(page)}
           className="mt-5"

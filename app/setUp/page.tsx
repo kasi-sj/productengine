@@ -27,7 +27,7 @@ export default function Home() {
     //@ts-ignore
     setConfiguration(configuration);
     console.log(configuration);
-    router.push("/main");
+    router.push("/advancedSearch");
   };
 
   return (

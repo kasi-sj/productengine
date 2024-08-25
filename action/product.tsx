@@ -122,8 +122,8 @@ export const advancedSearch = async (
   try {
     const { partitionName, username, password, baseURL } = configuration;
     const body = {
-      startRow: 0,
-      endRow: 10,
+      startRow: startRow,
+      endRow: endRow,
       operationType: "fetch",
       textMatchStyle: "exact",
       data: filter,

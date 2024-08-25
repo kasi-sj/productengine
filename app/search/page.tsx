@@ -99,6 +99,7 @@ export default function Home() {
   //   router.push("/setUp");
   // }
 
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="flex flex-row">
