@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 // import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +39,7 @@ import {
 import { advancedSearch, searchProduct } from "@/action/product";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 const Page = () => {
   const Configuration = useConfigurationStore((state) => state.configuration);
@@ -134,10 +135,12 @@ const Page = () => {
   useEffect(() => {
     if (type === "advancedSearch") {
       refetch();
+      console.log("adv refetch");
     } else if (type === "search") {
       searchRefetch();
+      console.log("search refetch");
     }
-  }, [currentTablePage, type]);
+  }, [type, currentTablePage]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -156,8 +159,12 @@ const Page = () => {
     setCurrentTablePage(1);
   };
 
+  console.log(selectedRows);
+
   return (
-    <div className="p-6 flex flex-col gap-4 justify-center items-center">
+    <div className="p-6 flex flex-col gap-4 justify-center px-8 items-center">
+      <Separator className="w-[1400px] ml-8 -mt-2 mb-4" />
+
       <div className="flex gap-4">
         {/* This is for search form */}
         <div className="flex flex-row">

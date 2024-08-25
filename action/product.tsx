@@ -226,26 +226,26 @@ export const getSimilarProducts = async (
   );
 
   const product = resp.data.response.data[0];
-    body = {
-      ...body,
-      endRow: 10,
-      startRow : 0,
-      data: {
-        operator: "or",
-        _constructor: "AdvancedCriteria",
-        criteria: Object.keys(product)
-          .map((f: any) => {
-            return {
-              fieldName: f,
-              operator: "iContains",
-              value: product[f],
-            };
-          })
-          .filter((item) => {
-            return item.value != "" && item.fieldName !== "typedId";
-          }),
-      },
-    };
+  body = {
+    ...body,
+    endRow: 10,
+    startRow: 0,
+    data: {
+      operator: "or",
+      _constructor: "AdvancedCriteria",
+      criteria: Object.keys(product)
+        .map((f: any) => {
+          return {
+            fieldName: f,
+            operator: "iContains",
+            value: product[f],
+          };
+        })
+        .filter((item) => {
+          return item.value != "" && item.fieldName !== "typedId";
+        }),
+    },
+  };
   const res = await axios.post(
     `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
     body,
@@ -268,4 +268,76 @@ export const getSimilarProducts = async (
     totalRows,
   };
   return result;
+};
+
+export const getProductExtension = async (
+  configuration: {
+    partitionName: string;
+    username: string;
+    password: string;
+    baseURL: string;
+  },
+  sku: string
+) => {
+  const { partitionName, username, password, baseURL } = configuration;
+
+  const resp = await axios.get(
+    `${baseURL}/pricefx/${partitionName}/configurationmanager.get/productextension`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(`${partitionName}/${username}:${password}`).toString(
+            "base64"
+          ),
+      },
+    }
+  );
+
+  const px = JSON.parse(resp.data.response.data[0]);
+  const query = new URLSearchParams({
+    output: "json",
+    useColumnNames: "true",
+  }).toString();
+  const data: any = {};
+  console.log();
+  const entry = Object.keys(px).map(async (key) => {
+    const value = px[key];
+    try {
+      const resp = await axios.post(
+        `${baseURL}/pricefx/${partitionName}/productmanager.fetch/*/PX/${key}?${query}`,
+        {
+          endRow: 1,
+          startRow: 0,
+          textMatchStyle: "exact",
+          data: {
+            sku: sku,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic " +
+              Buffer.from(`${partitionName}/${username}:${password}`).toString(
+                "base64"
+              ),
+          },
+        }
+      );
+      const result = resp.data.response.data;
+      if (result.length > 0) {
+        data[key] = {
+          struct: value,
+          data: result[0],
+        };
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  });
+  await Promise.all(entry);
+  console.log(data);
+  return data;
 };

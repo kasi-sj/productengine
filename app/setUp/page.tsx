@@ -31,7 +31,7 @@ export default function Home() {
   };
 
   return (
-    <div className="w-screen h-screen  bg-black flex justify-center items-center">
+    <div className="w-screen h-[640px] bg-black flex justify-center items-center">
       <div className="flex flex-col items-center gap-4">
         <Card className="p-6 w-[400px]">
           <CardHeader>
