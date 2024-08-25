@@ -1,4 +1,4 @@
-"use server";
+// "use server";
 import axios from "axios";
 
 export const searchProduct = async (
@@ -168,7 +168,7 @@ export const getProduct = async (
   var body: any = {
     operationType: "fetch",
     data: {
-      "sku" : sku
+      sku: sku,
     },
   };
 
@@ -192,4 +192,77 @@ export const getProduct = async (
     data: data.data[0],
   };
   return result;
+};
+
+export const getProductExtension = async (
+  configuration: {
+    partitionName: string;
+    username: string;
+    password: string;
+    baseURL: string;
+  },
+  sku: string
+) => {
+  const { partitionName, username, password, baseURL } = configuration;
+
+  const resp = await axios.get(
+    `${baseURL}/pricefx/${partitionName}/configurationmanager.get/productextension`,
+    {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization:
+          "Basic " +
+          Buffer.from(`${partitionName}/${username}:${password}`).toString(
+            "base64"
+          ),
+      },
+    }
+  );
+
+  const px = JSON.parse(resp.data.response.data[0]);
+  const query = new URLSearchParams({
+    output: "json",
+    useColumnNames: "true",
+  }).toString();
+  const data: any = {};
+  console.log()
+  const entry = Object.keys(px).map(async (key) => {
+    console.log(key)
+    const value = px[key];
+    try {
+      const resp = await axios.post(
+        `${baseURL}/pricefx/${partitionName}/productmanager.fetch/*/PX/${key}?${query}`,
+        {
+          endRow: 1,
+          startRow: 0,
+          textMatchStyle: "exact",
+          data: {
+            sku: sku,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic " +
+              Buffer.from(`${partitionName}/${username}:${password}`).toString(
+                "base64"
+              ),
+          },
+        }
+      );
+      const result = resp.data.response.data;
+      if(result.length > 0){
+        data[key] = {
+          struct : value,
+          data : result[0]
+        }
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  });
+  await Promise.all(entry);
+  console.log(data);
+  return data;
 };

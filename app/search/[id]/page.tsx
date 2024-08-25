@@ -1,5 +1,5 @@
 "use client";
-import { getProduct } from "@/action/product";
+import { getProduct, getProductExtension } from "@/action/product";
 import { useConfigurationStore } from "@/utils/store";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
@@ -15,14 +15,29 @@ const Page = ({ params }: any) => {
     },
   });
 
+  
+  const { data:extensionData, isLoading:extensionIsLoading, isFetched:extensionIsFetched, error:extensionError, refetch:extensionRefetch, isFetching:extensionIsFetching } = useQuery({
+    queryKey: ["getProduct"],
+    queryFn: async () => {
+      return await getProductExtension(Configuration, params.id);
+    },
+  });
+
+
   if (error) {
     return <div>Error</div>;
   }
 
-  if(isLoading){
+  if(isLoading||extensionIsLoading){
     return <div>Loading</div>
   }
-  return <div>{JSON.stringify(data)}</div>;
+  return <div>
+    {JSON.stringify(data)}
+    <h1>
+      extension
+    </h1>
+    {JSON.stringify(extensionData)}
+    </div>;
 };
 
 export default Page;
