@@ -62,9 +62,9 @@ const Page = ({ params }: any) => {
     },
   });
 
-  // if (error) {
-  //   return <div>Error</div>;
-  // }
+  if (error) {
+    return <div>Something went wrong please try again</div>;
+  }
 
   // if (isLoading) {
   //   return <div>Loading</div>;
@@ -85,7 +85,7 @@ const Page = ({ params }: any) => {
           ))
         ) : (
           <div className="flex justify-center h-full items-center mb-4">
-            {extensionIsFetching ? "Loading..." : "No  Products Extension"}
+            {extensionIsFetching || extensionIsLoading ? "Loading..." : "No  Products Extension"}
           </div>
         )}
       </div>
@@ -107,7 +107,7 @@ const Page = ({ params }: any) => {
           ))
         ) : (
           <div className="flex justify-center h-full items-center mb-4">
-            {similarIsFetching ? "Loading..." : "No Similar Products"}
+            {similarIsFetching ||similarIsLoading ? "Loading..." : "No Similar Products"}
           </div>
         )}
       </div>

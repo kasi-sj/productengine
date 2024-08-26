@@ -340,9 +340,12 @@ const Page = () => {
             <DialogTrigger asChild>
               <Button className="bg-blue-500 text-white">Compare</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[900px]">
               <DialogHeader>
                 <DialogTitle>Compare</DialogTitle>
+                <DialogDescription>
+                  Compare the selected products
+                </DialogDescription>
               </DialogHeader>
               <DialogDescription>
                 <CompareProduct selectedProducts={selectedRows} />
@@ -421,8 +424,15 @@ const Page = () => {
 
 const CompareProduct = ({ selectedProducts }: { selectedProducts: any[] }) => {
   const Configuration = useConfigurationStore((state) => state.configuration);
-
-  const { data, isLoading, isFetched, error, refetch, isFetching } = useQuery({
+  const router = useRouter();
+  const {
+    data,
+    isLoading: isCompareLoading,
+    isFetched,
+    error,
+    refetch,
+    isFetching: isCompareFetching,
+  } = useQuery({
     queryKey: ["getProduct"],
     queryFn: async () => {
       const getDetails = async (sku: string) => {
@@ -438,17 +448,49 @@ const CompareProduct = ({ selectedProducts }: { selectedProducts: any[] }) => {
     },
   });
 
-  if (isLoading || isFetching) {
+  if (isCompareLoading || isCompareFetching) {
     return <div>Loading...</div>;
+  }
+
+  const uniqueAttributes = Array.from(
+    new Set(data?.flatMap((product) => Object.keys(product)))
+  );
+
+  if (!data) {
+    return <div>No data found</div>;
   }
 
   return (
     <div>
-      {data?.map((product) => (
-        <div key={product}>
-          <h1>{JSON.stringify(product)}</h1>
-        </div>
-      ))}
+      {" "}
+      <Table
+        className="text-black w-[800px] mt-2 ml-4 h-[400px]"
+        selectionMode="none"
+        color="default"
+      >
+        <TableHeader>
+          {uniqueAttributes.map((element: any) => {
+            return <TableColumn key={element}>{element}</TableColumn>;
+          })}
+        </TableHeader>
+        <TableBody items={data}>
+          {(item: any) => (
+            <TableRow
+              className=" cursor-pointer"
+              key={item.sku || ""}
+              onClick={() => {
+                router.push(`search/${encodeURIComponent(item["sku"])}`);
+              }}
+            >
+              {uniqueAttributes.map((column) => (
+                <TableCell key={column}>
+                  {item[column] ? item[column] : "null"}
+                </TableCell>
+              ))}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 };
