@@ -227,7 +227,8 @@ const ExtensionCard = ({ struct, data }: any) => {
         .map((attr, idx) => (
           <div key={idx} className="mb-2">
             {/* //@ts-ignore */}
-            <strong>{attr.key}:</strong>{attr.value ?? "N/A"}
+            <strong>{attr.key}:</strong>
+            {attr.value ? "N/A" : null}
           </div>
         ))}
       {attributes.length > 3 && (

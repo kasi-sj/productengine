@@ -3,7 +3,7 @@ import React, { use, useEffect, useState } from "react";
 // import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getColumn } from "@/action/product";
+import { getColumn, getProduct } from "@/action/product";
 import { ChevronDownIcon, SearchIcon } from "lucide-react";
 import { useConfigurationStore } from "@/utils/store";
 import {
@@ -136,7 +136,7 @@ const Page = () => {
     if (type === "advancedSearch") {
       refetch();
       console.log("adv refetch");
-    } else if (type === "search") {
+    } else {
       searchRefetch();
       console.log("search refetch");
     }
@@ -308,7 +308,7 @@ const Page = () => {
                 <DialogTitle>Compare</DialogTitle>
               </DialogHeader>
               <DialogDescription>
-                Compare the selected products.
+                <CompareProduct selectedProducts={selectedRows} />
               </DialogDescription>
               <DialogFooter>
                 <Button
@@ -345,7 +345,7 @@ const Page = () => {
                 {(item: any) => (
                   <TableRow
                     className=" cursor-pointer"
-                    key={item.sku}
+                    key={item.sku || ""}
                     onClick={() => {
                       router.push(`search/${encodeURIComponent(item["sku"])}`);
                     }}
@@ -378,6 +378,40 @@ const Page = () => {
           className="mt-2 "
         />
       )}
+    </div>
+  );
+};
+
+const CompareProduct = ({ selectedProducts }: { selectedProducts: any[] }) => {
+  const Configuration = useConfigurationStore((state) => state.configuration);
+
+  const { data, isLoading, isFetched, error, refetch, isFetching } = useQuery({
+    queryKey: ["getProduct"],
+    queryFn: async () => {
+      const getDetails = async (sku: string) => {
+        const { data } = await getProduct(Configuration, sku);
+        console.log(data)
+        return data;
+      };
+      const data = await Promise.all(
+        selectedProducts.map((product) => getDetails(product.anchorKey))
+      );
+
+      return data;
+    },
+  });
+
+  if(isLoading || isFetching){
+    return <div>Loading...</div>
+  }
+  
+  return (
+    <div>
+      {data?.map((product) => (
+        <div key={product}>
+          <h1>{JSON.stringify(product)}</h1>
+        </div>
+      ))}
     </div>
   );
 };

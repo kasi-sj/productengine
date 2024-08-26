@@ -10,9 +10,9 @@ export function MenubarComponent() {
   );
 
   const router = useRouter();
-  if (Configuration == null || Configuration == undefined) {
-    router.push("/setUp");
-  }
+  // if (Configuration == null || Configuration == undefined) {
+  //   router.push("/setUp");
+  // }
   return (
     <Menubar className="text-black p-4 px-8 py-8 mt-2 border-none ">
       <div className="flex w-full">
