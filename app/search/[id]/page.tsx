@@ -62,7 +62,7 @@ const Page = ({ params }: any) => {
     },
   });
 
-  if (error) {
+  if (error || extensionError || similarError) {
     return <div>Something went wrong please try again</div>;
   }
 
