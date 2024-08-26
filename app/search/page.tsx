@@ -312,7 +312,8 @@ const Page = () => {
             <Button
               endContent={<ChevronDownIcon className="text-small" />}
               variant="flat"
-              className="w-fit p-2 px-4 bg-blue-500 text-white"
+              className="w-fit p-2 px-4
+               bg-blue-500 text-white"
             >
               Sort By
             </Button>
