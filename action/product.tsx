@@ -10,7 +10,8 @@ export const searchProduct = async (
   },
   startRow: number,
   endRow: number,
-  search: string
+  search: string,
+  sortBy: any[]
 ) => {
   const { partitionName, username, password, baseURL } = configuration;
   var body: any = {
@@ -18,7 +19,7 @@ export const searchProduct = async (
     endRow,
     startRow,
   };
-
+  console.log(sortBy);
   const columns = await getColumn(configuration);
   if (search !== "") {
     body = {
@@ -38,6 +39,16 @@ export const searchProduct = async (
             return item.value != "" && item.fieldName !== "typedId";
           }),
       },
+      sortBy: sortBy.map((item) => {
+        return "-" + item;
+      }),
+    };
+  } else {
+    body = {
+      ...body,
+      sortBy: sortBy.map((item) => {
+        return "-" + item;
+      }),
     };
   }
   console.log(JSON.stringify(body));
@@ -116,7 +127,8 @@ export const advancedSearch = async (
     password: string;
     baseURL: string;
   },
-  filter: any
+  filter: any,
+  sortBy: any[]
 ) => {
   try {
     const { partitionName, username, password, baseURL } = configuration;
@@ -125,7 +137,24 @@ export const advancedSearch = async (
       endRow: endRow,
       operationType: "fetch",
       textMatchStyle: "exact",
-      data: filter,
+      data: {
+        operator: "or",
+        _constructor: "AdvancedCriteria",
+        criteria: Object.keys(filter)
+          .map((f: any) => {
+            return {
+              fieldName: f,
+              operator: "iContains",
+              value: filter[f],
+            };
+          })
+          .filter((item) => {
+            return item.value != "" && item.fieldName !== "typedId";
+          }),
+      },
+      sortBy: sortBy.map((item) => {
+        return "-" + item;
+      }),
     };
 
     const resp = await axios.post(
@@ -224,31 +253,100 @@ export const getSimilarProducts = async (
       },
     }
   );
-
+  const map: any = {};
+  const count: any = {};
   const product = resp.data.response.data[0];
-    body = {
-      ...body,
+  const reps = Object.keys(product).map(async (key) => {
+    if (key === "typedId") {
+      return;
+    }
+    const body = {
+      operationType: "fetch",
       endRow: 10,
-      startRow : 0,
+      startRow: 0,
       data: {
         operator: "or",
         _constructor: "AdvancedCriteria",
-        criteria: Object.keys(product)
-          .map((f: any) => {
-            return {
-              fieldName: f,
-              operator: "iContains",
-              value: product[f],
-            };
-          })
-          .filter((item) => {
-            return item.value != "" && item.fieldName !== "typedId";
-          }),
+        criteria: [
+          {
+            fieldName: key,
+            operator: "iContains",
+            value: product[key],
+          },
+        ],
       },
     };
-  const res = await axios.post(
-    `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
-    body,
+    const res = await axios.post(
+      `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
+      body,
+      {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization:
+            "Basic " +
+            Buffer.from(`${partitionName}/${username}:${password}`).toString(
+              "base64"
+            ),
+        },
+      }
+    );
+    const entry = res.data.response.data.filter(
+      (item: any) => item.sku !== sku
+    );
+    entry.forEach((item: any) => {
+      if (!map[item.sku]) {
+        map[item.sku] = item;
+      }
+      if (!count[item.sku]) {
+        count[item.sku] = 0;
+      }
+      count[item.sku] += 1;
+    });
+  });
+  await Promise.all(reps);
+  // sort all the records by count highest to lowest
+  const keys = Object.keys(count).sort((a, b) => count[b] - count[a]);
+  const bb = keys.map((key) => map[key]);
+  return {
+    data: bb,
+  };
+  // const res = await axios.post(
+  //   `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
+  //   body,
+  //   {
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //       Authorization:
+  //         "Basic " +
+  //         Buffer.from(`${partitionName}/${username}:${password}`).toString(
+  //           "base64"
+  //         ),
+  //     },
+  //   }
+  // );
+
+  // const data = res.data.response;
+  // const totalRows = data.totalRows;
+  // const result = {
+  //   data: data.data.filter((item: any) => item.sku !== sku),
+  //   totalRows,
+  // };
+  // return result;
+};
+
+export const getProductExtension = async (
+  configuration: {
+    partitionName: string;
+    username: string;
+    password: string;
+    baseURL: string;
+  },
+  sku: string
+) => {
+  const { partitionName, username, password, baseURL } = configuration;
+
+  const resp = await axios.get(
+    `${baseURL}/pricefx/${partitionName}/configurationmanager.get/productextension`,
     {
       headers: {
         "Content-Type": "application/json",
@@ -261,11 +359,49 @@ export const getSimilarProducts = async (
     }
   );
 
-  const data = res.data.response;
-  const totalRows = data.totalRows;
-  const result = {
-    data: data.data.filter((item: any) => item.sku !== sku),
-    totalRows,
-  };
-  return result;
+  const px = JSON.parse(resp.data.response.data[0]);
+  const query = new URLSearchParams({
+    output: "json",
+    useColumnNames: "true",
+  }).toString();
+  const data: any = {};
+  console.log();
+  const entry = Object.keys(px).map(async (key) => {
+    const value = px[key];
+    try {
+      const resp = await axios.post(
+        `${baseURL}/pricefx/${partitionName}/productmanager.fetch/*/PX/${key}?${query}`,
+        {
+          endRow: 1,
+          startRow: 0,
+          textMatchStyle: "exact",
+          data: {
+            sku: sku,
+          },
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic " +
+              Buffer.from(`${partitionName}/${username}:${password}`).toString(
+                "base64"
+              ),
+          },
+        }
+      );
+      const result = resp.data.response.data;
+      if (result.length > 0) {
+        data[key] = {
+          struct: value,
+          data: result[0],
+        };
+      }
+    } catch (e) {
+      console.log(e);
+    }
+  });
+  await Promise.all(entry);
+  console.log(data);
+  return data;
 };

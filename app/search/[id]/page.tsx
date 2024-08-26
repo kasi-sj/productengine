@@ -1,5 +1,5 @@
 "use client";
-import { getProduct, getSimilarProducts } from "@/action/product";
+import { getProduct, getSimilarProducts, getProductExtension } from "@/action/product";
 import { useConfigurationStore } from "@/utils/store";
 import { useQuery } from "@tanstack/react-query";
 import React from "react";
@@ -40,12 +40,21 @@ const Page = ({ params }: any) => {
     },
   });
 
+  
+  const { data:extensionData, isLoading:extensionIsLoading, isFetched:extensionIsFetched, error:extensionError, refetch:extensionRefetch, isFetching:extensionIsFetching } = useQuery({
+    queryKey: ["getProduct"],
+    queryFn: async () => {
+      return await getProductExtension(Configuration, params.id);
+    },
+  });
+
+
   if (error) {
     return <div>Error</div>;
   }
 
-  if (isLoading) {
-    return <div>Loading</div>;
+  if(isLoading||extensionIsLoading){
+    return <div>Loading</div>
   }
   return (
     <div className="flex flex-col">
