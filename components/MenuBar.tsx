@@ -10,6 +10,7 @@ export function MenubarComponent() {
   );
 
   const router = useRouter();
+  2;
   // if (Configuration == null || Configuration == undefined) {
   //   router.push("/setUp");
   // }
@@ -41,7 +42,7 @@ export function MenubarComponent() {
           </MenubarTrigger>
         </MenubarMenu>
         <MenubarMenu>
-          <Link href={"/setUp"}>
+          <Link href={"/help"}>
             <MenubarTrigger className="gap-2">
               <>Help</>
               <span>
