@@ -57,6 +57,7 @@ const Page = () => {
   const [currentTablePage, setCurrentTablePage] = useState(1);
   const [searchValue, setSearchValue] = useState<string>("");
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [sortByColumns, setSortByColumns] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -85,6 +86,11 @@ const Page = () => {
     setSelectedColumns(selected);
   };
 
+  const handleSortByChange = (keys: any) => {
+    const selected = columns.filter((column) => keys.has(column.key));
+    setSortByColumns(selected);
+  };
+
   // {this is for form}
   const handleNext = () => setCurrentPage(currentPage + 1);
   const handlePrevious = () => setCurrentPage(currentPage - 1);
@@ -101,7 +107,9 @@ const Page = () => {
             acc[key] = value;
           }
           return acc;
-        }, {})
+        }, {},
+        ),
+        sortByColumns.map((col) => col.key)
       );
       setProduct(data);
       setFormData({});
@@ -124,7 +132,8 @@ const Page = () => {
         Configuration,
         currentTablePage * 10 - 10, //startRow
         currentTablePage * 10, //endRow
-        searchValue
+        searchValue,
+        sortByColumns.map((col) => col.key)
       );
       setProduct(data);
       setEndPage(Math.floor(totalRows / 10));
@@ -140,7 +149,7 @@ const Page = () => {
       searchRefetch();
       console.log("search refetch");
     }
-  }, [type, currentTablePage]);
+  }, [type, currentTablePage , sortByColumns]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -297,6 +306,33 @@ const Page = () => {
               : []}
           </DropdownMenu>
         </Dropdown>
+        {/* This is for the visible columns of the table */}
+        <Dropdown className="text-black">
+          <DropdownTrigger>
+            <Button
+              endContent={<ChevronDownIcon className="text-small" />}
+              variant="flat"
+              className="w-fit p-2 px-4 bg-blue-500 text-white"
+            >
+              Sort By
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu
+            closeOnSelect={false}
+            selectedKeys={new Set(sortByColumns.map((col) => col.key))}
+            selectionMode="multiple"
+            onSelectionChange={handleSortByChange}
+            className="h-[300px] overflow-y-auto no-scrollbar"
+          >
+            {product?.length > 0
+              ? columns.map((column) => (
+                  <DropdownItem key={column.key} value={column.key}>
+                    {column.Label}
+                  </DropdownItem>
+                ))
+              : []}
+          </DropdownMenu>
+        </Dropdown>
 
         {selectedRows.length > 0 && (
           <Dialog>
@@ -400,6 +436,7 @@ const CompareProduct = ({ selectedProducts }: { selectedProducts: any[] }) => {
     queryFn: async () => {
       const getDetails = async (sku: string) => {
         const { data } = await getProduct(Configuration, sku);
+        console.log(data);
         return data;
       };
       const data = await Promise.all(
