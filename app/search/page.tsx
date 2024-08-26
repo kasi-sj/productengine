@@ -1,9 +1,9 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 // import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getColumn, getProductExtension } from "@/action/product";
+import { getColumn, getProduct } from "@/action/product";
 import { ChevronDownIcon, SearchIcon } from "lucide-react";
 import { useConfigurationStore } from "@/utils/store";
 import {
@@ -39,6 +39,7 @@ import {
 import { advancedSearch, searchProduct } from "@/action/product";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { Separator } from "@/components/ui/separator";
 
 const Page = () => {
   const Configuration = useConfigurationStore((state) => state.configuration);
@@ -56,6 +57,7 @@ const Page = () => {
   const [currentTablePage, setCurrentTablePage] = useState(1);
   const [searchValue, setSearchValue] = useState<string>("");
   const [selectedRows, setSelectedRows] = useState<any[]>([]);
+  const [sortByColumns, setSortByColumns] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchFields = async () => {
@@ -84,6 +86,11 @@ const Page = () => {
     setSelectedColumns(selected);
   };
 
+  const handleSortByChange = (keys: any) => {
+    const selected = columns.filter((column) => keys.has(column.key));
+    setSortByColumns(selected);
+  };
+
   // {this is for form}
   const handleNext = () => setCurrentPage(currentPage + 1);
   const handlePrevious = () => setCurrentPage(currentPage - 1);
@@ -100,7 +107,8 @@ const Page = () => {
             acc[key] = value;
           }
           return acc;
-        }, {})
+        }, {}),
+        sortByColumns.map((col) => col.key)
       );
       setProduct(data);
       setFormData({});
@@ -123,7 +131,8 @@ const Page = () => {
         Configuration,
         currentTablePage * 10 - 10, //startRow
         currentTablePage * 10, //endRow
-        searchValue
+        searchValue,
+        sortByColumns.map((col) => col.key)
       );
       setProduct(data);
       setEndPage(Math.floor(totalRows / 10));
@@ -134,10 +143,12 @@ const Page = () => {
   useEffect(() => {
     if (type === "advancedSearch") {
       refetch();
-    } else if (type === "search") {
+      console.log("adv refetch");
+    } else {
       searchRefetch();
+      console.log("search refetch");
     }
-  }, [currentTablePage, type]);
+  }, [type, currentTablePage, sortByColumns]);
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
@@ -156,8 +167,12 @@ const Page = () => {
     setCurrentTablePage(1);
   };
 
+  console.log(selectedRows);
+
   return (
-    <div className="p-6 flex flex-col gap-4 justify-center items-center">
+    <div className="p-6 flex flex-col gap-4 justify-center px-8 items-center">
+      <Separator className="w-[1400px] ml-8 -mt-2 mb-4" />
+
       <div className="flex gap-4">
         {/* This is for search form */}
         <div className="flex flex-row">
@@ -290,18 +305,48 @@ const Page = () => {
               : []}
           </DropdownMenu>
         </Dropdown>
+        {/* This is for the visible columns of the table */}
+        <Dropdown className="text-black">
+          <DropdownTrigger>
+            <Button
+              endContent={<ChevronDownIcon className="text-small" />}
+              variant="flat"
+              className="w-fit p-2 px-4 bg-blue-500 text-white"
+            >
+              Sort By
+            </Button>
+          </DropdownTrigger>
+          <DropdownMenu
+            closeOnSelect={false}
+            selectedKeys={new Set(sortByColumns.map((col) => col.key))}
+            selectionMode="multiple"
+            onSelectionChange={handleSortByChange}
+            className="h-[300px] overflow-y-auto no-scrollbar"
+          >
+            {product?.length > 0
+              ? columns.map((column) => (
+                  <DropdownItem key={column.key} value={column.key}>
+                    {column.Label}
+                  </DropdownItem>
+                ))
+              : []}
+          </DropdownMenu>
+        </Dropdown>
 
         {selectedRows.length > 0 && (
           <Dialog>
             <DialogTrigger asChild>
               <Button className="bg-blue-500 text-white">Compare</Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="w-[900px]">
               <DialogHeader>
                 <DialogTitle>Compare</DialogTitle>
+                <DialogDescription>
+                  Compare the selected products
+                </DialogDescription>
               </DialogHeader>
               <DialogDescription>
-                Compare the selected products.
+                <CompareProduct selectedProducts={selectedRows} />
               </DialogDescription>
               <DialogFooter>
                 <Button
@@ -338,7 +383,7 @@ const Page = () => {
                 {(item: any) => (
                   <TableRow
                     className=" cursor-pointer"
-                    key={item.sku}
+                    key={item.sku || ""}
                     onClick={() => {
                       router.push(`search/${encodeURIComponent(item["sku"])}`);
                     }}
@@ -371,6 +416,79 @@ const Page = () => {
           className="mt-2 "
         />
       )}
+    </div>
+  );
+};
+
+const CompareProduct = ({ selectedProducts }: { selectedProducts: any[] }) => {
+  const Configuration = useConfigurationStore((state) => state.configuration);
+  const router = useRouter();
+  const {
+    data,
+    isLoading: isCompareLoading,
+    isFetched,
+    error,
+    refetch,
+    isFetching: isCompareFetching,
+  } = useQuery({
+    queryKey: ["getProduct"],
+    queryFn: async () => {
+      const getDetails = async (sku: string) => {
+        const { data } = await getProduct(Configuration, sku);
+        console.log(data);
+        return data;
+      };
+      const data = await Promise.all(
+        selectedProducts.map((product) => getDetails(product.anchorKey))
+      );
+
+      return data;
+    },
+  });
+
+  if (isCompareLoading || isCompareFetching) {
+    return <div>Loading...</div>;
+  }
+
+  const uniqueAttributes = Array.from(
+    new Set(data?.flatMap((product) => Object.keys(product)))
+  );
+
+  if (!data) {
+    return <div>No data found</div>;
+  }
+
+  return (
+    <div>
+      {" "}
+      <Table
+        className="text-black w-[800px] mt-2 ml-4 h-[400px]"
+        selectionMode="none"
+        color="default"
+      >
+        <TableHeader>
+          {uniqueAttributes.map((element: any) => {
+            return <TableColumn key={element}>{element}</TableColumn>;
+          })}
+        </TableHeader>
+        <TableBody items={data}>
+          {(item: any) => (
+            <TableRow
+              className=" cursor-pointer"
+              key={item.sku || ""}
+              onClick={() => {
+                router.push(`search/${encodeURIComponent(item["sku"])}`);
+              }}
+            >
+              {uniqueAttributes.map((column) => (
+                <TableCell key={column}>
+                  {item[column] ? item[column] : "null"}
+                </TableCell>
+              ))}
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 };
