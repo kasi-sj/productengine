@@ -276,32 +276,36 @@ export const getSimilarProducts = async (
         ],
       },
     };
-    const res = await axios.post(
-      `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
-      body,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization:
-            "Basic " +
-            Buffer.from(`${partitionName}/${username}:${password}`).toString(
-              "base64"
-            ),
-        },
-      }
-    );
-    const entry = res.data.response.data.filter(
-      (item: any) => item.sku !== sku
-    );
-    entry.forEach((item: any) => {
-      if (!map[item.sku]) {
-        map[item.sku] = item;
-      }
-      if (!count[item.sku]) {
-        count[item.sku] = 0;
-      }
-      count[item.sku] += 1;
-    });
+    try {
+      const res = await axios.post(
+        `${baseURL}/pricefx/${partitionName}/productmanager.fetchformulafilteredproducts`,
+        body,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization:
+              "Basic " +
+              Buffer.from(`${partitionName}/${username}:${password}`).toString(
+                "base64"
+              ),
+          },
+        }
+      );
+      const entry = res.data.response.data.filter(
+        (item: any) => item.sku !== sku
+      );
+      entry.forEach((item: any) => {
+        if (!map[item.sku]) {
+          map[item.sku] = item;
+        }
+        if (!count[item.sku]) {
+          count[item.sku] = 0;
+        }
+        count[item.sku] += 1;
+      });
+    } catch (e) {
+      console.log(e);
+    }
   });
   await Promise.all(reps);
   // sort all the records by count highest to lowest

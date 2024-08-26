@@ -62,7 +62,7 @@ const Page = ({ params }: any) => {
     },
   });
 
-  if (error || extensionError || similarError) {
+  if (error) {
     return <div>Something went wrong please try again</div>;
   }
 
@@ -87,7 +87,7 @@ const Page = ({ params }: any) => {
           <div className="flex justify-center h-full items-center mb-4">
             {extensionIsFetching || extensionIsLoading
               ? "Loading..."
-              : "No  Products Extension"}
+              : extensionError ? "something went wrong extension" : "No Extension Data"}
           </div>
         )}
       </div>
@@ -111,7 +111,7 @@ const Page = ({ params }: any) => {
           <div className="flex justify-center h-full items-center mb-4">
             {similarIsFetching || similarIsLoading
               ? "Loading..."
-              : "No Similar Products"}
+              : similarError ? "something went wrong similar" : "No Similar Products"}
           </div>
         )}
       </div>
